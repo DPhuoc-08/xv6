@@ -30,8 +30,8 @@ static int readline(int fd, char *buffer, int max) {
 int main(int argc, char *argv[]) {
     int fd1, fd2;
     char *file1, *file2;
-    int quiet = 0;
-    if (argc < 3) {
+    int quiet = 0; // Flag
+    if (argc < 3) { 
         fprintf(2, "usage: diff file1 file2 [-q]\n");
         exit(1);
     }
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
         file1 = argv[1];
         file2 = argv[2];
     }
-    else {
+    else { // Not equal to 3 or 4 arguments
         fprintf(2, "usage: diff file1 file2 [-q]\n");
         exit(1);
     }
