@@ -199,6 +199,7 @@ UPROGS=\
 	$U/_pingpong\
 	$U/_cp\
 	$U/_primes\
+	$U/_diff\
 
 ifeq ($(LAB),syscall)
 UPROGS += \
