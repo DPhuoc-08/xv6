@@ -195,12 +195,13 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_sleep\
-	$U/_sleeptest\
 	$U/_pingpong\
-	$U/_cp\
 	$U/_primes\
+	$U/_cp\
+	$U/_tree\
+	$U/_du\
 	$U/_diff\
-
+	
 ifeq ($(LAB),syscall)
 UPROGS += \
 	$U/_attack\
