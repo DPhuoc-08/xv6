@@ -4,108 +4,155 @@
 #include "kernel/fcntl.h"
 #include "user/user.h"
 
-int s_option = 0;
-int a_option = 0;
+int summaryOnlyOption = 0;
+int allFilesOption = 0;
 
-static int is_dot_or_dotdot(const char *name) {
-    return strcmp(name, ".") == 0 || strcmp(name, "..") == 0;
+static int
+isCurrentOrParentDirectory(const char *directoryOrFileName)
+{
+    return strcmp(directoryOrFileName, ".") == 0 || strcmp(directoryOrFileName, "..") == 0;
 }
 
-static void name_from_dirent(char *out, struct dirent *de) {
-    memmove(out, de->name, DIRSIZ);
-    out[DIRSIZ] = '\0';
+static void
+extractStringNameFromDirectoryEntry(char *outputStringBuffer, struct dirent *directoryEntry)
+{
+    memmove(outputStringBuffer, directoryEntry->name, DIRSIZ);
+    outputStringBuffer[DIRSIZ] = '\0';
 }
 
-static int join_path(char *out, int outsz, const char *parent, const char *child) {
-    int lp = strlen(parent);
-    int lc = strlen(child);
-    if (lp + 1 + lc + 1 > outsz) return -1;
-    memmove(out, parent, lp);
-    out[lp] = '/';
-    memmove(out + lp + 1, child, lc);
-    out[lp + 1 + lc] = '\0';
+static int
+concatenateParentAndChildPaths(char *outputPathBuffer, int outputBufferSize, const char *parentPath, const char *childName)
+{
+    int parentPathLength = strlen(parentPath);
+    int childNameLength  = strlen(childName);
+
+    if (parentPathLength + 1 + childNameLength + 1 > outputBufferSize)
+    {
+        return -1;
+    }
+
+    memmove(outputPathBuffer, parentPath, parentPathLength);
+    outputPathBuffer[parentPathLength] = '/';
+    memmove(outputPathBuffer + parentPathLength + 1, childName, childNameLength);
+    outputPathBuffer[parentPathLength + 1 + childNameLength] = '\0';
+
     return 0;
 }
 
-long du(const char *path, int is_root) {
-    int fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        fprintf(2, "du: cannot open %s\n", path);
+static long
+calculateDiskUsage(const char *currentPath, int isRootPath)
+{
+    int fileDescriptor = open(currentPath, O_RDONLY);
+    if (fileDescriptor < 0)
+    {
+        fprintf(2, "du: cannot open %s\n", currentPath);
         return 0;
     }
 
-    struct stat st;
-    if (fstat(fd, &st) < 0) {
-        fprintf(2, "du: fstat failed %s\n", path);
-        close(fd);
+    struct stat fileStatusInfo;
+    if (fstat(fileDescriptor, &fileStatusInfo) < 0)
+    {
+        fprintf(2, "du: fstat failed %s\n", currentPath);
+        close(fileDescriptor);
         return 0;
     }
 
-    if (st.type == T_FILE) {
-        close(fd);
-        long size = st.size;
-        int should_print = 0;
-        if (s_option) {
-            if (is_root) should_print = 1;
-        } else {
-            if (a_option || is_root) should_print = 1;
+    if (fileStatusInfo.type == T_FILE)
+    {
+        close(fileDescriptor);
+        long fileSize = fileStatusInfo.size;
+
+        int shouldPrintThisEntry = 0;
+        if (summaryOnlyOption)
+        {
+            if (isRootPath) shouldPrintThisEntry = 1;
         }
-        if (should_print) {
-            printf("%d\t%s\n", (int)size, path);
-        }
-        return size;
-    } else if (st.type == T_DIR) {
-        long total_size = 0;
-        struct dirent de;
-        while (read(fd, &de, sizeof(de)) == sizeof(de)) {
-            if (de.inum == 0) continue;
-            char name[DIRSIZ + 1];
-            name_from_dirent(name, &de);
-
-            if (is_dot_or_dotdot(name)) continue;
-
-            char child[512];
-            if (join_path(child, sizeof(child), path, name) < 0) continue;
-
-            total_size += du(child, 0);
-        }
-        close(fd);
-
-        int should_print = 0;
-        if (s_option) {
-            if (is_root) should_print = 1;
-        } else {
-            should_print = 1;
+        else
+        {
+            if (allFilesOption || isRootPath) shouldPrintThisEntry = 1;
         }
 
-        if (should_print) {
-            printf("%d\t%s\n", (int)total_size, path);
+        if (shouldPrintThisEntry)
+        {
+            printf("%d\t%s\n", (int)fileSize, currentPath);
         }
-        return total_size;
+        return fileSize;
     }
 
-    close(fd);
+    if (fileStatusInfo.type == T_DIR)
+    {
+        long accumulatedTotalSize = 0;
+        struct dirent nextDirectoryEntry;
+
+        while (read(fileDescriptor, &nextDirectoryEntry, sizeof(nextDirectoryEntry)) == sizeof(nextDirectoryEntry))
+        {
+            if (nextDirectoryEntry.inum == 0) continue;
+
+            char extractedChildName[DIRSIZ + 1];
+            extractStringNameFromDirectoryEntry(extractedChildName, &nextDirectoryEntry);
+
+            if (isCurrentOrParentDirectory(extractedChildName)) continue;
+
+            char fullChildPath[512];
+            if (concatenateParentAndChildPaths(fullChildPath, sizeof(fullChildPath), currentPath, extractedChildName) < 0) continue;
+
+            accumulatedTotalSize += calculateDiskUsage(fullChildPath, 0);
+        }
+        close(fileDescriptor);
+
+        int shouldPrintThisEntry = 0;
+        if (summaryOnlyOption)
+        {
+            if (isRootPath) shouldPrintThisEntry = 1;
+        }
+        else
+        {
+            shouldPrintThisEntry = 1;
+        }
+
+        if (shouldPrintThisEntry)
+        {
+            printf("%d\t%s\n", (int)accumulatedTotalSize, currentPath);
+        }
+        return accumulatedTotalSize;
+    }
+
+    close(fileDescriptor);
     return 0;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc > 4) {
+int main(int argc, char *argv[])
+{
+    if (argc > 4)
+    {
         fprintf(2, "usage: du [path] [-a] [-s]\n");
         exit(1);
     }
 
-    const char *start = ".";
+    const char *startDirectoryPath = ".";
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-a") == 0) {
-            a_option = 1;
-        } else if (strcmp(argv[i], "-s") == 0) {
-            s_option = 1;
-        } else {
-            start = argv[i];
+    for (int argumentIndex = 1; argumentIndex < argc; argumentIndex++)
+    {
+        if (strcmp(argv[argumentIndex], "-a") == 0)
+        {
+            allFilesOption = 1;
+        }
+        else if (strcmp(argv[argumentIndex], "-s") == 0)
+        {
+            summaryOnlyOption = 1;
+        }
+        else
+        {
+            startDirectoryPath = argv[argumentIndex];
         }
     }
 
-    du(start, 1);
+    if (allFilesOption && summaryOnlyOption)
+    {
+        fprintf(2, "du: cannot both summarize and show all entries\n");
+        exit(1);
+    }
+
+    calculateDiskUsage(startDirectoryPath, 1);
     exit(0);
 }
