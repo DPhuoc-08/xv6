@@ -55,7 +55,7 @@ main(int argc, char *argv[])
     }
     else
     {
-        close(finitFdd[0]);
+        close(initFd[0]);
         for (int i = 2; i <= 280; i++)
             write(initFd[1], &i, sizeof(i));
 

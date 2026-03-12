@@ -2,7 +2,7 @@
 #include "user/user.h"
 
 int 
-main() {
+main(int argc, char *argv[]) {
 
     int fd1[2];
     int fd2[2];
