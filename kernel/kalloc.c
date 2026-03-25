@@ -80,3 +80,19 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+uint64 
+getfreemem(void)
+{
+  struct run *pHead = kmem.freelist; // Pointer to head of list
+  int countFreeMem = 0; // To count free mem in list
+
+  acquire(&kmem.lock); // kmem is static which means we must acquire exclusively use for it  
+  while (pHead) {      // Just in case "race condition" of CPUs
+    pHead = pHead->next;
+    ++countFreeMem;
+  }
+
+  release(&kmem.lock); // After counting, take it back to its original state
+  return countFreeMem * PGSIZE;
+}
