@@ -103,20 +103,20 @@ sys_trace(void)
   return 0;
 }
 
-uint64 
+uint64
 sys_sysinfo(void)
 {
-  struct sysinfo info;
   uint64 address;
+  struct sysinfo info;
 
   argaddr(0, &address);
 
-  info.freemem = getfreemem(); 
+  info.freemem = getfreemem();
   info.nproc = getnproc();
 
-  if (copyout(myproc()->pagetable, address, (char*) &info, sizeof(info) < 0)) {
+  if (copyout(myproc()->pagetable, address, (char *)&info, sizeof(info)) < 0) {
     return -1;
   }
-
+  
   return 0;
 }

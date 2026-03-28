@@ -84,10 +84,12 @@ kalloc(void)
 uint64 
 getfreemem(void)
 {
-  struct run *pHead = kmem.freelist; // Pointer to head of list
+  struct run *pHead; // Pointer to head of list
   int countFreeMem = 0; // To count free mem in list
 
   acquire(&kmem.lock); // kmem is static which means we must acquire exclusively use for it  
+  pHead = kmem.freelist;
+  
   while (pHead) {      // Just in case "race condition" of CPUs
     pHead = pHead->next;
     ++countFreeMem;
