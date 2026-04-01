@@ -2,6 +2,22 @@
 #include "kernel/sysinfo.h"
 #include "user/user.h"
 
+void testcall() {
+  struct sysinfo info;
+  
+  printf("sysinfotest: testing call\n");
+  
+  if (sysinfo(&info) < 0) {
+    printf("sysinfotest: sysinfo failed\n");
+    exit(1);
+  }
+
+  if (sysinfo((struct sysinfo *) 0xffffffffffffffff) != -1) {
+    printf("sysinfotest: sysinfo error (invalid address)\n");
+    exit(1);
+  }
+}
+
 void testmem() {
   struct sysinfo info;
   uint64 m1, m2;
@@ -70,6 +86,7 @@ void testproc() {
 
 int
 main(int argc, char *argv[]) {
+  testcall();
   testmem();
   testproc();
 
