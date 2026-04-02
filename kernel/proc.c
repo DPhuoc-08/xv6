@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "ptree.h"
 
 struct cpu cpus[NCPU];
 
@@ -713,3 +714,33 @@ getnproc(void)
   }
   return countProc;
 }
+
+// Collect process info for up to max processes into user-space buf.
+// Returns the number of processes written, or -1 on error.
+int
+getptree(uint64 buf, int max)
+{
+  struct proc *p;
+  struct ptreeinfo info[NPROC];
+  int count = 0;
+
+  for (p = proc; p < &proc[NPROC] && count < max; p++) {
+    acquire(&p->lock);
+    if (p->state != UNUSED) {
+      info[count].pid  = p->pid;
+      info[count].ppid = p->parent ? p->parent->pid : 0;
+      info[count].state   = p->state;
+      info[count].memsize = p->sz;
+      safestrcpy(info[count].name, p->name, sizeof(p->name));
+      count++;
+    }
+    release(&p->lock);
+  }
+
+  if (copyout(myproc()->pagetable, buf, (char *)info,
+              count * sizeof(struct ptreeinfo)) < 0)
+    return -1;
+
+  return count;
+}
+

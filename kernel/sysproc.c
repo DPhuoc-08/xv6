@@ -6,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sysinfo.h"
+#include "ptree.h"
 
 
 uint64
@@ -120,3 +121,18 @@ sys_sysinfo(void)
   
   return 0;
 }
+
+uint64
+sys_ptree(void)
+{
+  uint64 buf;
+  int max;
+
+  argaddr(0, &buf);
+  argint(1, &max);
+
+  if (buf == 0 || max <= 0)
+    return -1;
+
+  return getptree(buf, max);
+}
