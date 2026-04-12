@@ -145,7 +145,7 @@ $U/initcode: $U/initcode.S
 tags: $(OBJS) _init
 	etags *.S *.c
 
-ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
+ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o $U/ugetpid.o
 
 ifeq ($(LAB),lock)
 ULIB += $U/statistics.o
@@ -195,9 +195,10 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 
-
-
-
+ifeq ($(LAB),pgtbl)
+UPROGS += \
+	$U/_pgtbltest
+endif
 ifeq ($(LAB),syscall)
 UPROGS += \
 	$U/_attack\
