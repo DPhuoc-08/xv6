@@ -245,11 +245,6 @@ barrier: notxv6/barrier.c
 	gcc -o barrier -g -O2 $(XCFLAGS) notxv6/barrier.c -pthread
 endif
 
-ifeq ($(LAB),pgtbl)
-UPROGS += \
-	$U/_pgtbltest
-endif
-
 ifeq ($(LAB),lock)
 UPROGS += \
 	$U/_kalloctest\

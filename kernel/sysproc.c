@@ -91,3 +91,46 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+#ifdef LAB_PGTBL
+uint64
+sys_pgaccess(void)
+{
+  uint64 va;      // starting virtual address
+  int npages;     // number of pages to check
+  uint64 abitsaddr; // user address for bitmask result
+
+  argaddr(0, &va);
+  argint(1, &npages);
+  argaddr(2, &abitsaddr);
+
+  // limit the number of pages that can be scanned
+  if(npages > 32)
+    npages = 32;
+  if(npages < 0)
+    return -1;
+
+  struct proc *p = myproc();
+  unsigned int mask = 0;
+
+  for(int i = 0; i < npages; i++){
+    uint64 addr = va + i * PGSIZE;
+    pte_t *pte = walk(p->pagetable, addr, 0);
+    if(pte == 0)
+      continue;
+    if((*pte & PTE_V) == 0)
+      continue;
+    if(*pte & PTE_A){
+      mask |= (1 << i);
+      // clear the accessed bit so next call can detect new accesses
+      *pte &= ~PTE_A;
+    }
+  }
+
+  // copy the bitmask to user space
+  if(copyout(p->pagetable, abitsaddr, (char *)&mask, sizeof(mask)) < 0)
+    return -1;
+
+  return 0;
+}
+#endif
