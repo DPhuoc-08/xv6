@@ -92,7 +92,6 @@ sys_uptime(void)
   return xticks;
 }
 
-#ifdef LAB_PGTBL
 uint64
 sys_pgaccess(void)
 {
@@ -133,4 +132,3 @@ sys_pgaccess(void)
 
   return 0;
 }
-#endif

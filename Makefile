@@ -194,11 +194,8 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_pgtbltest\
 
-ifeq ($(LAB),pgtbl)
-UPROGS += \
-	$U/_pgtbltest
-endif
 ifeq ($(LAB),syscall)
 UPROGS += \
 	$U/_attack\
