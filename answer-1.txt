@@ -1,9 +1,12 @@
 Câu hỏi thêm: Những lệnh gọi hệ thống nào khác trong xv6 có thể được tăng tốc bằng cách
 sử dụng trang chia sẻ này? Hãy giải thích.
-Những lệnh gọi hệ thống trong xv6 có thể được tăng tốc bằng cách sử dụng trang chia sẻ là:\
-1. getppid() (lấy PID của tiến trình cha)
-- Lệnh gọi này trả về một giá trị số nguyên đơn giản là PID của tiến trình cha. Thông tin này đã có sẵn trong kernel và ít khi thay đổi trong vòng đời của tiến trình. Do đó, kernel có thể ghi giá trị này vào vùng nhớ chia sẻ khi tiến trình được tạo hoặc khi quan hệ cha–con thay đổi. Khi đó, chương trình người dùng chỉ cần đọc trực tiếp từ vùng nhớ này mà không cần thực hiện system call.
-2. uptime() (thời gian hệ thống đã chạy)
-- Đây là một giá trị toàn cục của hệ thống, thường được cập nhật định kỳ bởi kernel (ví dụ theo mỗi timer interrupt). Vì chỉ cần đọc giá trị hiện tại, nên có thể đặt nó trong vùng nhớ chia sẻ để user truy cập trực tiếp. Điều này giúp tránh việc phải thực hiện nhiều lần system call khi cần đo thời gian, từ đó cải thiện hiệu năng.
-3. getuid() / getgid() (nếu có)
-Các thông tin như user ID hoặc group ID thường không thay đổi trong suốt vòng đời của tiến trình. Đây là dữ liệu đơn giản, không cần xử lý khi truy cập, nên rất phù hợp để đặt trong vùng nhớ chia sẻ nhằm tránh chi phí chuyển đổi giữa user mode và kernel mode.
+Những lệnh gọi hệ thống trong xv6 có thể được tăng tốc bằng cách sử dụng trang chia sẻ là:
+
+1. Hàm uptime(), hàm dùng để lấy thời gian hệ thống đã chạy: Giá trị toàn cục của hệ thống,
+thường được cập nhật định kì bởi kernel. Vì chỉ cần đọc giá trị hiện tại, nên có thể đặt nó
+trong vùng nhớ chia sẻ để user truy cập trực tiếp. Diều này giúp tránh việc phải thực hiện
+nhiều lần system call khi cần đo thời gian, từ đó cải thiện hiệu năng.
+
+2. Hàm getppid(): PID của tiến trình cha có thể được lưu trong struct usyscall cùng với
+pid. Giá trị này cố định sau khi tiến trình được tạo (trừ khi cha kết thúc và tiến trình được
+reparent trong những trường hợp này cần cập nhật lại thông tin trong trang chia sẻ).
